@@ -1,17 +1,19 @@
 import { withBase } from 'ufo'
-import type { ProviderGetImage, ResolvedImage } from '../../module'
+import type { ProviderGetImage, ResolvedImage, ImageOptions } from '../../module'
 
 export const getImage: ProviderGetImage = (
   src: string,
-  { modifiers, baseURL = 'http://localhost:1337/uploads' } = {},
+  { modifiers, baseURL = 'http://localhost:1337/uploads' }: ImageOptions = {},
 ): ResolvedImage => {
-  const breakpoint
-    = modifiers?.breakpoint ?? undefined
+  const breakpoint = modifiers?.breakpoint
+  const breakpoints = modifiers?.breakpoints || [
+    'large',
+    'medium',
+    'small',
+    'thumbnail',
+  ]
   const formats = modifiers?.formats
-
-  const path = src.startsWith('/uploads/')
-    ? src.slice(9)
-    : src
+  const path = src.replace(/^\/uploads\//, '')
 
   if (!breakpoint || !formats) {
     return {
@@ -19,18 +21,12 @@ export const getImage: ProviderGetImage = (
     }
   }
 
-  const breakpoints = ['large', 'medium', 'small', 'thumbnail'] as const
-
   const startIndex = breakpoints.indexOf(breakpoint)
-
-  for (let i = startIndex; i < breakpoints.length; i++) {
-    const size = breakpoints[i]
-    const format = formats[size as typeof breakpoints[number]]
+  for (const size of breakpoints.slice(startIndex)) {
+    const format = formats[size as (typeof breakpoints)[number]]
 
     if (format?.url) {
-      const formatPath = format.url.startsWith('/uploads/')
-        ? format.url.slice(9)
-        : format.url
+      const formatPath = format.url.replace(/^\/uploads\//, '')
 
       return {
         url: withBase(formatPath, baseURL),
